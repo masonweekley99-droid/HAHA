@@ -15,9 +15,13 @@ contract IdentityShiftEngine {
 
     mapping(address => mapping(uint256 => uint256)) public shiftBalances;
 
+    // EVENTS
     event VerusSold(address indexed user, uint256 amount, uint256 dripBase);
     event TimeShift(address indexed user, uint256 newBalance);
     event BitcoinRevived(address indexed user, uint256 btcAmount);
+    
+    // NEW: BarGraph Event for Stellar Relay
+    event BarGraphUpdate(address indexed user, uint256 indexed barId, uint256 newBalance, string updateType);
 
     constructor(address _vrt, address _kas, address _btc) {
         admin = msg.sender;
@@ -38,6 +42,9 @@ contract IdentityShiftEngine {
         for (uint i = 0; i < 12; i++) {
             uint256 multiplier = (i + 1) * 10;
             shiftBalances[user][i] += dripBase * multiplier;
+            
+            // Emit the bar graph update to Stellar
+            emit BarGraphUpdate(user, i, shiftBalances[user][i], "VRT_DRIP");
         }
         emit VerusSold(user, amount, dripBase);
     }
@@ -47,6 +54,9 @@ contract IdentityShiftEngine {
         lastTick = block.timestamp;
         for (uint i = 0; i < 12; i++) {
             shiftBalances[user][i] = (shiftBalances[user][i] * 101) / 100;
+            
+            // Emit the bar graph update to Stellar
+            emit BarGraphUpdate(user, i, shiftBalances[user][i], "HOURLY_TICK");
         }
         emit TimeShift(user, shiftBalances[user][0]);
     }
@@ -57,7 +67,6 @@ contract IdentityShiftEngine {
             require(shiftBalances[msg.sender][i] >= requiredPerToken, "Identity burn insufficient");
             shiftBalances[msg.sender][i] -= requiredPerToken;
         }
-        // ✅ WBTC = 8 decimals
         require(frozenBitcoin.transfer(msg.sender, btcAmount * 10**8), "Bitcoin revive failed");
         emit BitcoinRevived(msg.sender, btcAmount);
     }
