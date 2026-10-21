@@ -14,14 +14,13 @@ contract IdentityShiftEngine {
     address public admin;
 
     mapping(address => mapping(uint256 => uint256)) public shiftBalances;
+    mapping(string => bool) public usedStellarProofs; // NEW: Replay protection
 
-    // EVENTS
     event VerusSold(address indexed user, uint256 amount, uint256 dripBase);
     event TimeShift(address indexed user, uint256 newBalance);
     event BitcoinRevived(address indexed user, uint256 btcAmount);
-    
-    // NEW: BarGraph Event for Stellar Relay
     event BarGraphUpdate(address indexed user, uint256 indexed barId, uint256 newBalance, string updateType);
+    event AssetUnlocked(address indexed user, string stellarProof, uint256 reward); // NEW: Reverse bridge event
 
     constructor(address _vrt, address _kas, address _btc) {
         admin = msg.sender;
@@ -42,8 +41,6 @@ contract IdentityShiftEngine {
         for (uint i = 0; i < 12; i++) {
             uint256 multiplier = (i + 1) * 10;
             shiftBalances[user][i] += dripBase * multiplier;
-            
-            // Emit the bar graph update to Stellar
             emit BarGraphUpdate(user, i, shiftBalances[user][i], "VRT_DRIP");
         }
         emit VerusSold(user, amount, dripBase);
@@ -54,8 +51,6 @@ contract IdentityShiftEngine {
         lastTick = block.timestamp;
         for (uint i = 0; i < 12; i++) {
             shiftBalances[user][i] = (shiftBalances[user][i] * 101) / 100;
-            
-            // Emit the bar graph update to Stellar
             emit BarGraphUpdate(user, i, shiftBalances[user][i], "HOURLY_TICK");
         }
         emit TimeShift(user, shiftBalances[user][0]);
@@ -69,5 +64,17 @@ contract IdentityShiftEngine {
         }
         require(frozenBitcoin.transfer(msg.sender, btcAmount * 10**8), "Bitcoin revive failed");
         emit BitcoinRevived(msg.sender, btcAmount);
+    }
+
+    // THE REVERSE BRIDGE FUNCTION
+    function unlockWithStellarProof(string memory stellarProof) external {
+        require(!usedStellarProofs[stellarProof], "Proof already used");
+        usedStellarProofs[stellarProof] = true;
+        
+        // Reward logic: Give them 1,000 units of Identity Token #0
+        shiftBalances[msg.sender][0] += 1000 * 10**18;
+        
+        emit AssetUnlocked(msg.sender, stellarProof, 1000);
+        emit BarGraphUpdate(msg.sender, 0, shiftBalances[msg.sender][0], "STELLAR_UNLOCK");
     }
 }
