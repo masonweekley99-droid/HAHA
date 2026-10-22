@@ -14,13 +14,13 @@ contract IdentityShiftEngine {
     address public admin;
 
     mapping(address => mapping(uint256 => uint256)) public shiftBalances;
-    mapping(string => bool) public usedStellarProofs; // NEW: Replay protection
+    mapping(string => bool) public usedStellarProofs;
 
     event VerusSold(address indexed user, uint256 amount, uint256 dripBase);
     event TimeShift(address indexed user, uint256 newBalance);
     event BitcoinRevived(address indexed user, uint256 btcAmount);
     event BarGraphUpdate(address indexed user, uint256 indexed barId, uint256 newBalance, string updateType);
-    event AssetUnlocked(address indexed user, string stellarProof, uint256 reward); // NEW: Reverse bridge event
+    event AssetUnlocked(address indexed user, string stellarProof, uint256 reward);
 
     constructor(address _vrt, address _kas, address _btc) {
         admin = msg.sender;
@@ -66,14 +66,10 @@ contract IdentityShiftEngine {
         emit BitcoinRevived(msg.sender, btcAmount);
     }
 
-    // THE REVERSE BRIDGE FUNCTION
     function unlockWithStellarProof(string memory stellarProof) external {
         require(!usedStellarProofs[stellarProof], "Proof already used");
         usedStellarProofs[stellarProof] = true;
-        
-        // Reward logic: Give them 1,000 units of Identity Token #0
         shiftBalances[msg.sender][0] += 1000 * 10**18;
-        
         emit AssetUnlocked(msg.sender, stellarProof, 1000);
         emit BarGraphUpdate(msg.sender, 0, shiftBalances[msg.sender][0], "STELLAR_UNLOCK");
     }

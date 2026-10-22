@@ -5,7 +5,7 @@ from stellar_sdk import Server, Keypair, TransactionBuilder, Network, Asset
 
 # --- CONFIGURATION ---
 EVM_RPC_URL = "http://127.0.0.1:8545"
-ENGINE_ADDRESS = "0x84eA74d481Ee0A5332c457a4d796187F6Ba67fEB" # Update if redeployed
+ENGINE_ADDRESS = "0x36C02dA8a0983159322a80FFE9F24b1acfF8B570" # Update if redeployed
 
 # Event Topics
 TOPIC_BITCOIN_REVIVED = "0x4e6eb050f0090ed1a6213e4d2c2b806dbca771d0eb043b9f6a5b5c4b60142d95"
