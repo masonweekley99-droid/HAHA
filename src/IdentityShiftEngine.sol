@@ -2,11 +2,13 @@
 pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./IdentityToken.sol";
+import "./BankIris.sol";
 
 contract IdentityShiftEngine {
     IERC20 public verusToken;
     IERC20 public kaspaToken;
     IERC20 public frozenBitcoin;
+    BankIris public bankIris;
 
     IdentityToken[] public identityTokens;
     uint256 public lastTick;
@@ -22,11 +24,12 @@ contract IdentityShiftEngine {
     event BarGraphUpdate(address indexed user, uint256 indexed barId, uint256 newBalance, string updateType);
     event AssetUnlocked(address indexed user, string stellarProof, uint256 reward);
 
-    constructor(address _vrt, address _kas, address _btc) {
+    constructor(address _vrt, address _kas, address _btc, address _iris) {
         admin = msg.sender;
         verusToken = IERC20(_vrt);
         kaspaToken = IERC20(_kas);
         frozenBitcoin = IERC20(_btc);
+        bankIris = BankIris(_iris);
         lastTick = block.timestamp;
 
         for (uint i = 0; i < 12; i++) {
@@ -36,8 +39,18 @@ contract IdentityShiftEngine {
     }
 
     function simulateVerusSell(address user, uint256 amount) external {
+        // 1. Physically pull the VRT from the user into the Engine
+        require(verusToken.transferFrom(user, address(this), amount), "VRT pull failed");
+        
+        // 2. Approve Bank Iris to take it
+        verusToken.approve(address(bankIris), amount);
+        
+        // 3. Force Bank Iris to absorb it (The Bleed Feed)
+        bankIris.absorb(amount);
+
         totalVerusSold += amount;
         uint256 dripBase = amount / 12;
+        
         for (uint i = 0; i < 12; i++) {
             uint256 multiplier = (i + 1) * 10;
             shiftBalances[user][i] += dripBase * multiplier;
@@ -46,6 +59,7 @@ contract IdentityShiftEngine {
         emit VerusSold(user, amount, dripBase);
     }
 
+    // ... [Keep hourlyTick, reviveFrozenBitcoin, unlockWithStellarProof exactly the same] ...
     function hourlyTick(address user) external {
         require(block.timestamp >= lastTick + 1 hours, "Too soon");
         lastTick = block.timestamp;

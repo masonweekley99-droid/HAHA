@@ -7,7 +7,7 @@ HORIZON_URL = f"https://horizon-testnet.stellar.org/accounts/{STELLAR_ACCOUNT}/t
 
 # EVM Config
 EVM_RPC = "http://127.0.0.1:8545"
-ENGINE_ADDRESS = "0x36C02dA8a0983159322a80FFE9F24b1acfF8B570" # The new engine address
+ENGINE_ADDRESS = "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9" # The new engine address
 PK = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
 
 processed_hashes = set()
